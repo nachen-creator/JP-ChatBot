@@ -90,10 +90,8 @@
     let chatContainer; 
     let currentAiBubble = null; 
 
-    // ⚠️ 【全场唯一需要你修改的地方】 ⚠️
-    // 把下面引号里的内容，换成你刚刚开启隧道生成的 https:// 网址！
-    // 注意：每次你关闭并重新打开 Ngrok/Pinggy，这个网址都会变，记得每次都要来这里改一下！
-    const tunnelUrl = "https://nontranscribing-nonrelativistic-siobhan.ngrok-free.dev"; 
+    // ⚠️ 注意：这里再也不需要手动写死任何 Ngrok 网址了！
+    // 删掉了原来那个 tunnelUrl 变量
 
     window.onload = function() {
         chatContainer = document.getElementById('messages'); 
@@ -101,10 +99,13 @@
     };
 
     function connectToServer() {
-        // 自动把 https:// 替换成 WebSocket 专属的 wss:// 协议（这步千万别删！）
-        const socketUrl = tunnelUrl.replace("https://", "wss://").replace("http://", "ws://");
+        // ✨ 神仙代码：自动获取当前浏览器地址栏的网址，并拼上 /ws
+        // 如果你浏览器是 http://127.0.0.1:8000，它就生成 ws://127.0.0.1:8000/ws
+        // 如果你浏览器是 https://xxx.ngrok.dev，它就生成 wss://xxx.ngrok.dev/ws
+        const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+        const socketUrl = protocol + window.location.host + "/ws"; 
         
-        console.log("🚀 正在尝试连接外网 WebSocket:", socketUrl);
+        console.log("🚀 正在尝试连接 WebSocket:", socketUrl);
         socket = new WebSocket(socketUrl);
         
         socket.onopen = function() {
@@ -177,6 +178,7 @@
 </body>
 
 </html>
+
 
 
 
