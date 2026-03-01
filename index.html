@@ -22,7 +22,7 @@
         <button onclick="sendMessage()">Send</button>
     </div>
 
-<script>
+<!-- <script>
     let socket;
     let chatContainer; 
     let currentAiBubble = null; 
@@ -84,6 +84,98 @@
         inputField.value = '';
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
+</script> -->
+<script>
+    let socket;
+    let chatContainer; 
+    let currentAiBubble = null; 
+
+    // 【替换点1】把这里换成 Localtunnel 给你的 https 网址 (例如: https://xxx.loca.lt)
+    const tunnelUrl = "https://your-unique-name.loca.lt"; 
+
+    window.onload = function() {
+        chatContainer = document.getElementById('messages'); 
+        // 启动连接流程
+        initLocaltunnelConnection();
+    };
+
+    // 【核心改进】增加异步刷脸逻辑，确保 200 个用户不用输密码
+    async function initLocaltunnelConnection() {
+        console.log("正在尝试绕过隧道警告...");
+        
+        try {
+            // 1. 发送静默请求，带上 Bypass Header，让服务器放行该浏览器
+            await fetch(tunnelUrl, {
+                method: 'GET',
+                headers: { 'Bypass-Tunnel-Reminder': 'true' },
+                mode: 'no-cors' // 必须加，防止跨域报错
+            });
+            console.log("✅ 刷脸成功，开始握手 WebSocket...");
+        } catch (e) {
+            console.error("❌ 刷脸失败:", e);
+        }
+
+        // 2. 调用原有的连接逻辑
+        connectToServer();
+    }
+
+    function connectToServer() {
+        // 【替换点2】把 https 换成 wss 协议
+        const socketUrl = tunnelUrl.replace("https://", "wss://");
+        socket = new WebSocket(socketUrl);
+        
+        socket.onopen = function() {
+            console.log("✅ WebSocket 连接成功！");
+            // 可以在界面显示连接状态
+        };
+
+        socket.onerror = function(error) {
+            console.error("❌ WebSocket 报错了:", error);
+        };
+
+        socket.onmessage = function(event) {
+            if (currentAiBubble) {
+                currentAiBubble.innerText = event.data;
+                if(chatContainer) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+            }
+        };
+
+        // 如果连接断开，尝试重连（可选）
+        socket.onclose = function() {
+            console.log("⚠️ 连接断开了，正在尝试重连...");
+            setTimeout(initLocaltunnelConnection, 3000);
+        };
+    }
+
+    function sendMessage() {
+        const inputField = document.getElementById('user-input'); 
+        const text = inputField.value;
+        if (!text || !socket || socket.readyState !== WebSocket.OPEN) {
+            if (socket.readyState !== WebSocket.OPEN) alert("连接还没准备好，请稍等");
+            return;
+        }
+
+        const userBubble = document.createElement('div');
+        userBubble.className = 'message user-message'; 
+        userBubble.innerText = text;
+        chatContainer.appendChild(userBubble);
+
+        const newAiBubble = document.createElement('div');
+        newAiBubble.className = 'message ai-message'; 
+        newAiBubble.innerText = '...Thinking...'; 
+        chatContainer.appendChild(newAiBubble);
+        
+        currentAiBubble = newAiBubble;
+
+        // 发给 Unity
+        socket.send(text);
+
+        inputField.value = '';
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
 </script>
 </body>
+
 </html>
