@@ -90,26 +90,20 @@
     let chatContainer; 
     let currentAiBubble = null; 
 
-    // 【极其重要：只改这一行！】
-    // 把下面引号里的内容，换成你在 PowerShell 里运行 Pinggy 后拿到的那个 https:// 网址
-    // 例如："https://rn123-456...a.free.pinggy.link"
-    const tunnelUrl = "https://nontranscribing-nonrelativistic-siobhan.ngrok-free.dev"; 
+    // 【终极本地测试版】直接指向你本机的 Unity 9000 端口！注意是 ws://，没有 s！
+    const socketUrl = "ws://localhost:9000"; 
 
     window.onload = function() {
         chatContainer = document.getElementById('messages'); 
-        // 删除了没用的刷脸逻辑，直接开门见山连 WebSocket
         connectToServer();
     };
 
     function connectToServer() {
-        // 自动把 https:// 替换成 WebSocket 专属的 wss:// 协议
-        const socketUrl = tunnelUrl.replace("https://", "wss://");
-        
-        console.log("🚀 正在尝试直连 WebSocket:", socketUrl);
+        console.log("🚀 正在尝试纯本地直连 WebSocket:", socketUrl);
         socket = new WebSocket(socketUrl);
         
         socket.onopen = function() {
-            console.log("✅ WebSocket 连接成功！墙已被打穿！");
+            console.log("✅ WebSocket 连接成功！Unity 本地端口是通的！");
         };
 
         socket.onerror = function(error) {
@@ -125,7 +119,6 @@
             }
         };
 
-        // 如果断开了，3秒后自动重连
         socket.onclose = function() {
             console.log("⚠️ 连接断开了，3秒后正在尝试重连...");
             setTimeout(connectToServer, 3000); 
@@ -136,20 +129,18 @@
         const inputField = document.getElementById('user-input'); 
         const text = inputField.value;
         
-        if (!text || !socket || socket.readyState !== WebSocket.OPEN) {
-            if (!socket || socket.readyState !== WebSocket.OPEN) {
-                alert("连接还没准备好，请稍等...");
-            }
+        if (!text) return;
+
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+            alert("连接还没准备好或者 Unity 没运行，请稍等...");
             return;
         }
 
-        // 显示用户气泡
         const userBubble = document.createElement('div');
         userBubble.className = 'message user-message'; 
         userBubble.innerText = text;
         chatContainer.appendChild(userBubble);
 
-        // 预创建 AI 气泡
         const newAiBubble = document.createElement('div');
         newAiBubble.className = 'message ai-message'; 
         newAiBubble.innerText = '...Thinking...'; 
@@ -157,10 +148,8 @@
         
         currentAiBubble = newAiBubble;
 
-        // 发给后端 (Unity)
         socket.send(text);
 
-        // 清空输入框并滚动到底部
         inputField.value = '';
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
@@ -168,6 +157,7 @@
 </body>
 
 </html>
+
 
 
 
